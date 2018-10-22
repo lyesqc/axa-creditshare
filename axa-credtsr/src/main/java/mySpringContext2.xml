@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:context="http://www.springframework.org/schema/context"
+        xmlns:tx="http://www.springframework.org/schema/tx"
+        xmlns:aop="http://www.springframework.org/schema/aop"
+        xsi:schemaLocation="http://www.springframework.org/schema/beans 
+        http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+                            http://www.springframework.org/schema/context 
+                            http://www.springframework.org/schema/context/spring-context-4.0.xsd
+                            http://www.springframework.org/schema/aop 
+                            http://www.springframework.org/schema/aop/spring-aop-4.0.xsd
+                            http://www.springframework.org/schema/tx  
+                            http://www.springframework.org/schema/tx/spring-tx-4.0.xsd">
+ 
+     
+    <context:property-placeholder location="classpath:application.properties" />
+
+
+<context:component-scan  base-package="org.dao,org.services" />
+<!-- Hibernate Configuration beans -->
+
+<tx:annotation-driven transaction-manager="transactionManager"/>
+     
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="${jdbc.driverClassName}" />
+        <property name="url" value="${jdbc.url}"/>
+        <property name="username" value="${jdbc.username}" />
+        <property name="password" value="${jdbc.password}"/>
+         
+    </bean>
+    
+     
+     
+     
+    <bean id="sessionFactory" class="org.springframework.orm.hibernate4.LocalSessionFactoryBean" >
+        <property name="dataSource" ref="dataSource"/>
+        
+           <property name="packagesToScan">
+            <list>
+                <value>org.entity</value>
+            </list>
+        </property>
+        
+        <property name="hibernateProperties">
+            <props>
+                <prop key="hibernate.dialect">${hibernate.dialect}</prop>
+                <prop key="hibernate.show_sql">${hibernate.show_sql:true}</prop>
+                <prop key="hibernate.format_sql">${hibernate.format_sql:true}</prop>
+                <prop key="hibernate.temp.use_jdbc_metadata_defaults">false</prop>
+                <!-- 
+                <prop key="hibernate.cache.use_second_level_cache">true</prop>
+                	<prop key="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.EhCacheRegionFactory
+				</prop>  
+				 -->
+                
+            </props>
+        </property>       
+    </bean>
+ 
+    <bean id="transactionManager"  class="org.springframework.orm.hibernate4.HibernateTransactionManager">
+        <property name="sessionFactory" ref="sessionFactory" />
+    </bean>
+ 
+    <bean id="persistenceExceptionTranslationPostProcessor"
+        class="org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor"/>
+         
+
+
+
+
+<!-- JobDetail beens setting -->
+
+
+
+<bean name="JobToRun" class="org.springframework.scheduling.quartz.JobDetailBean">
+
+	<property name="jobClass" value="org.services.MyJobDetail" />
+	<property name="jobDataAsMap">
+		  <map>
+			<entry key="quantityService" value-ref="quantityService" />
+		  </map>
+		</property>
+   
+</bean>
+
+<bean id="cronTrigger"
+	class="org.springframework.scheduling.quartz.CronTriggerBean">
+
+	<property name="jobDetail" ref="JobToRun" />
+	<property name="cronExpression" value="0/10 * * * * ?" />
+
+</bean>
+
+<bean class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+
+
+	<property name="triggers">
+    	<list>
+			<ref bean="cronTrigger" />
+    	</list>
+	</property>
+</bean>
+
+
+</beans>
